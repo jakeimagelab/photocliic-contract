@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return NextResponse.json({ ok: false, error: "ANTHROPIC_API_KEY 미설정" }, { status: 500 });
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return NextResponse.json({ ok: false, error: "OPENAI_API_KEY 미설정" }, { status: 500 });
 
   const body  = await req.json();
   const quote = body.quote;
@@ -41,15 +41,14 @@ export async function POST(req: NextRequest) {
   "special": "특약사항 — 이 병원의 촬영 항목과 진료과 특성을 반영한 구체적 특약 (4~5줄)"
 }`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
+      "Authorization": `Bearer ${key}`,
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "gpt-4o",
       max_tokens: 3000,
       messages: [{ role: "user", content: prompt }],
     }),
@@ -57,11 +56,11 @@ export async function POST(req: NextRequest) {
 
   if (!res.ok) {
     const err = await res.text();
-    return NextResponse.json({ ok: false, error: `Claude API 오류: ${res.status}` }, { status: 500 });
+    return NextResponse.json({ ok: false, error: `OpenAI API 오류: ${res.status}` }, { status: 500 });
   }
 
   const data = await res.json();
-  const txt  = (data.content || []).map((b: any) => b.text || "").join("");
+  const txt  = data.choices?.[0]?.message?.content || "";
 
   try {
     const s = txt.indexOf("{");
